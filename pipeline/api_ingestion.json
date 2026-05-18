@@ -1,0 +1,121 @@
+{
+	"name": "api_ingestion",
+	"properties": {
+		"activities": [
+			{
+				"name": "ForEachfile",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Lookup_filenames",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Lookup_filenames').output.value",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "http_Ingestion",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "JsonSource",
+									"storeSettings": {
+										"type": "HttpReadSettings",
+										"requestMethod": "GET"
+									},
+									"formatSettings": {
+										"type": "JsonReadSettings"
+									}
+								},
+								"sink": {
+									"type": "JsonSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									},
+									"formatSettings": {
+										"type": "JsonWriteSettings"
+									}
+								},
+								"enableStaging": false
+							},
+							"inputs": [
+								{
+									"referenceName": "ds_github_src",
+									"type": "DatasetReference",
+									"parameters": {
+										"p_filename": {
+											"value": "@{item().file}.json",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "ds_ingest",
+									"type": "DatasetReference",
+									"parameters": {
+										"p_file": {
+											"value": "@item().file",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					]
+				}
+			},
+			{
+				"name": "Lookup_filenames",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "JsonSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "JsonReadSettings"
+						}
+					},
+					"dataset": {
+						"referenceName": "ds_filesarray",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2026-05-03T15:16:31Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}
